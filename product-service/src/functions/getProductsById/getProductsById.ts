@@ -7,6 +7,7 @@ import { validate } from 'uuid';
 import { AppError } from '@libs/apiError';
 import { product } from "../../types/product.type";
 import { dbOptions } from 'src/common/db-connect';
+import { formatJSONResponse } from '@libs/apiGateway';
 
 export const findProduct = async (productsArray: product[], id: number): Promise<product | null> => {
   const productsList = await Promise.resolve(productsArray);
@@ -23,12 +24,12 @@ export const getProductById = async (event) => {
 
   try {
     await client.connect();
-    const { rows } = await client.query('SELECT f.id, description, title, sort, height, price, count FROM flowers f join stock s on f.id = s.id WHERE f.id = $1', [productId]);
+    const { rows } = await client.query('SELECT f.id, description, title, price, count FROM products f join stocks s on f.id = s.product_id WHERE f.id = $1', [productId]);
     const product = rows[0];
     if (!product) {
       throw new AppError(getReasonPhrase(StatusCodes.NOT_FOUND), StatusCodes.NOT_FOUND);
     }
-    return product;
+    return formatJSONResponse(product, 200);
   } finally {
     await client.end();
   }
