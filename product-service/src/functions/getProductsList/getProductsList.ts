@@ -1,18 +1,19 @@
 import 'source-map-support/register';
-import { formatJSONResponse } from '@libs/apiGateway';
+import { Client } from "pg"
 import { middyfy } from '@libs/lambda';
-import { productsList } from '../productsListMock';
-import { product } from 'src/types/product.type';
 
-export const getData = async (productsList: product[]): Promise<product[] | null> =>
-    await Promise.resolve(productsList);
+import { dbOptions } from 'src/common/db-connect';
 
 export const getProductsList = async () => {
-  const productsArray = await getData(productsList);
-
-  return productsArray ?
-      formatJSONResponse({ products: productsArray }, 200) :
-      formatJSONResponse({ message: 'Server Error' }, 500);
+  const client = new Client(dbOptions);
+  try {
+    await client.connect();
+    const { rows } = await client.query('SELECT f.id, description, title, sort, height, price, count FROM flowers f join stock s on f.id = s.id');
+    const products = rows;
+    return products;
+  } finally {
+    await client.end();
+  }
 }
 
 export const main = middyfy(getProductsList);
